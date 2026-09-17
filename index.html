@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Adote o Gatinho - TikTok LIVE</title>
+    <style>
+        * { box-sizing: border-box; font-family: 'Arial Rounded MT Bold', sans-serif; -webkit-tap-highlight-color: transparent; }
+        body {
+            margin: 0; padding: 6px; background: #0f0f1a; color: #fff;
+            display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+            height: 100vh; overflow: hidden; position: relative;
+        }
+
+        /* BOTÃO E MODAL DE CONFIGURAÇÕES (REPOSICIONADO PARA O CANTO INFERIOR DIREITO) */
+        #btn-config-app {
+            position: fixed; bottom: 12px; right: 12px; z-index: 1000;
+            background: rgba(22, 33, 62, 0.9); border: 1.5px solid #ff2a5f;
+            color: #fff; font-size: 18px; width: 42px; height: 42px;
+            border-radius: 50%; cursor: pointer; display: flex;
+            align-items: center; justify-content: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.6);
+        }
+        #modal-config-app {
+            display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(10, 10, 20, 0.85); z-index: 2000;
+            align-items: center; justify-content: center; backdrop-filter: blur(4px);
+        }
+        .config-card-app {
+            background: #16213e; border: 2px solid #ff2a5f; border-radius: 14px;
+            padding: 20px; width: 85%; max-width: 300px; text-align: center;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.6);
+        }
+        .config-card-app h3 { margin: 0 0 15px 0; color: #00fff5; font-size: 18px; }
+        .btn-cfg-action {
+            width: 100%; padding: 10px; margin-top: 10px; border: none;
+            border-radius: 8px; font-weight: bold; font-size: 14px; cursor: pointer;
+        }
+        .btn-cfg-sair { background: #ff2a5f; color: #fff; }
+        .btn-cfg-voltar { background: #2a2a4a; color: #fff; }
+
+        /* BARRA DO TOP 3 */
+        .leaderboard-horizontal {
+            width: 100%; max-width: 840px; margin-top: 3px;
+            background: rgba(22, 33, 62, 0.95); border: 1.5px solid #2a2a4a;
+            border-radius: 10px; padding: 6px 14px; display: flex;
+            align-items: center; justify-content: space-between; gap: 12px;
+            z-index: 3; box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+        #ranks { display: flex; flex: 1; justify-content: space-around; gap: 10px; }
+        .rank-item {
+            display: flex; align-items: center; gap: 6px; background: #0f172a;
+            padding: 5px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; flex: 1;
+            justify-content: space-between; max-width: 240px;
+        }
+        .rank-item .user-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px; }
+        .rank-1 { border-bottom: 2px solid #f1c40f; color: #f1c40f; }
+        .rank-2 { border-bottom: 2px solid #e0e0e0; color: #e0e0e0; }
+        .rank-3 { border-bottom: 2px solid #e67e22; color: #e67e22; }
+
+        /* BANNER DE NOTIFICAÇÃO */
+        #interaction-banner {
+            width: 100%; max-width: 420px; height: 28px;
+            margin-top: 3px; position: relative; overflow: hidden; z-index: 5;
+        }
+        .interaction-pop {
+            position: absolute; width: 100%; height: 100%;
+            background: linear-gradient(135deg, #ff2a5f, #ff7675);
+            color: #fff; border-radius: 8px; display: flex; align-items: center; justify-content: center;
+            font-size: 12px; font-weight: bold; box-shadow: 0 2px 8px rgba(255, 42, 95, 0.4);
+            animation: slideDownFade 2.2s ease-in-out forwards;
+        }
+        @keyframes slideDownFade {
+            0% { opacity: 0; transform: translateY(-10px) scale(0.9); }
+            15% { opacity: 1; transform: translateY(0) scale(1); }
+            80% { opacity: 1; transform: translateY(0) scale(1); }
+            100% { opacity: 0; transform: translateY(-8px) scale(0.95); }
+        }
+
+        /* CABEÇALHO */
+        .header {
+            display: flex; justify-content: space-between; align-items: center;
+            width: 100%; max-width: 420px; margin-top: 3px;
+            background: rgba(26, 26, 46, 0.95); padding: 6px 12px;
+            border-radius: 12px 12px 0 0; border: 2px solid #2a2a4a; border-bottom: none;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5); z-index: 2;
+        }
+        .cat-card { font-size: 15px; color: #00fff5; font-weight: bold; }
+        .timer { font-size: 18px; color: #ff2a5f; font-weight: 900; }
+
+        /* PALCO DO JOGO */
+        .game-container {
+            display: flex; width: 100%; max-width: 420px; height: 260px;
+            margin: 0; z-index: 1; position: relative;
+        }
+        #stage {
+            flex: 1; width: 100%; background: radial-gradient(circle, #1a1a3a 0%, #0d0d1a 100%);
+            border-radius: 0; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; position: relative;
+            border: 3px solid #ff2a5f; border-top: none; border-bottom: none;
+            box-shadow: 0 8px 25px rgba(255, 42, 95, 0.25);
+            overflow: hidden;
+        }
+
+        #cat-wrapper {
+            position: relative; display: flex; flex-direction: column;
+            align-items: center; transition: transform 0.8s ease-in-out; z-index: 2;
+        }
+        
+        #speech-bubble {
+            position: absolute; top: -42px; background: #ffffff; color: #000;
+            padding: 6px 12px; border-radius: 12px; font-size: 12px; font-weight: 900;
+            white-space: nowrap; box-shadow: 0 4px 10px rgba(0,0,0,0.3); opacity: 0;
+            transition: opacity 0.3s ease-in-out; pointer-events: none; z-index: 10;
+        }
+        #speech-bubble::after {
+            content: ''; position: absolute; bottom: -6px; left: 50%;
+            transform: translateX(-50%); border-width: 6px 6px 0; border-style: solid;
+            border-color: #ffffff transparent; display: block; width: 0;
+        }
+
+        #cat-avatar { 
+            font-size: 85px; transition: transform 0.2s ease-in-out; 
+            filter: drop-shadow(0 10px 15px rgba(0,0,0,0.5));
+        }
+
+        /* BARRA ROLANTE */
+        .gift-info-container {
+            width: 100%; max-width: 420px; margin-top: 0;
+            background: rgba(22, 33, 62, 0.95); border: 2px solid #ff2a5f;
+            border-radius: 0 0 16px 16px; padding: 6px 0; overflow: hidden;
+            position: relative; display: flex; z-index: 3;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+        }
+        .gift-info-track {
+            display: flex; gap: 24px; white-space: nowrap;
+            animation: autoScroll 18s linear infinite;
+            will-change: transform; align-items: center;
+        }
+        .gift-relation-item {
+            font-size: 13px; font-weight: 900; color: #ffffff;
+            display: flex; align-items: center; gap: 4px;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.6));
+        }
+        .gift-relation-item span.pts { color: #00fff5; font-weight: 900; }
+
+        @keyframes autoScroll {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+
+        /* ÁREA DOS GATINHOS ABAIXO DA BARRA ROLANTE */
+        #cat-stage-below-scroll {
+            width: 100%; max-width: 420px; height: 120px;
+            position: relative; overflow: hidden; pointer-events: none;
+            z-index: 4; margin-top: 4px;
+            border-radius: 12px;
+            border: 1.5px solid #2a2a4a;
+            background-color: #121224;
+            background-image: repeating-conic-gradient(#1a1a38 0%-25%, #101020 0%-50%);
+            background-size: 24px 24px;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.7);
+        }
+        
+        .floating-cat-item {
+            position: absolute; font-size: 45px; opacity: 0;
+            will-change: transform, opacity;
+            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5));
+        }
+
+        @keyframes catAnimationBelow {
+            0% { opacity: 0; transform: translate(var(--start-x), var(--start-y)); }
+            10% { opacity: 1; transform: translate(var(--mid-x), var(--mid-y)); }
+            50% { opacity: 1; transform: translate(calc(var(--mid-x) - 15px), calc(var(--mid-y) + 10px)); }
+            85% { opacity: 1; transform: translate(var(--mid-x), var(--mid-y)); }
+            100% { opacity: 0; transform: translate(var(--end-x), var(--end-y)); }
+        }
+        .floating-cat-item.active { animation: catAnimationBelow 14.5s ease-in-out forwards; }
+
+        .star {
+            position: absolute; color: #ffeaa7; font-size: 12px;
+            user-select: none; pointer-events: none; z-index: 1; animation: fall linear forwards;
+        }
+
+        .falling-emoji {
+            position: absolute; font-size: 28px;
+            user-select: none; pointer-events: none; z-index: 3; animation: fall linear forwards;
+            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5));
+        }
+
+        @keyframes fall {
+            0% { transform: translateY(-20px) scale(0.8); opacity: 1; }
+            100% { transform: translateY(280px) scale(1.1); opacity: 0; }
+        }
+
+        .eating { animation: bounce 0.6s infinite; }
+        .purring { animation: pulse 0.4s infinite; }
+        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-18px); } }
+        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.15); } }
+
+        #winner-modal {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(10, 10, 20, 0.95); display: none; flex-direction: column;
+            align-items: center; justify-content: center; z-index: 10; text-align: center; padding: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- BOTÃO DE CONFIGURAÇÕES (PARTE INFERIOR DIREITA) -->
+    <button id="btn-config-app" onclick="abrirModalConfig()">⚙️</button>
+
+    <!-- MODAL DE CONFIGURAÇÕES -->
+    <div id="modal-config-app">
+        <div class="config-card-app">
+            <h3>Opções</h3>
+            <button class="btn-cfg-action btn-cfg-sair" onclick="sairDoAplicativo()">Fechar Aplicativo</button>
+            <button class="btn-cfg-action btn-cfg-voltar" onclick="fecharModalConfig()">Voltar ao Jogo</button>
+        </div>
+    </div>
+
+    <!-- BARRA TOP 3 -->
+    <div class="leaderboard-horizontal">
+        <div id="ranks">
+            <div class="rank-item rank-1"><span class="user-name">1. ---</span><span>0p</span></div>
+            <div class="rank-item rank-2"><span class="user-name">2. ---</span><span>0p</span></div>
+            <div class="rank-item rank-3"><span class="user-name">3. ---</span><span>0p</span></div>
+        </div>
+    </div>
+
+    <!-- BANNER DE NOTIFICAÇÕES -->
+    <div id="interaction-banner"></div>
+
+    <!-- HEADER (NOME + TIMER) -->
+    <div class="header">
+        <div class="cat-card" id="cat-name">🐱 Gatinho: Mingau</div>
+        <div class="timer" id="timer">05:00</div>
+    </div>
+
+    <!-- PALCO DO JOGO -->
+    <div class="game-container">
+        <div id="stage">
+            <div id="cat-wrapper">
+                <div id="speech-bubble">Me adota!</div>
+                <div id="cat-avatar">🐱</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- BARRA ROLANTE DE PRESENTES -->
+    <div class="gift-info-container">
+        <div class="gift-info-track">
+            <span class="gift-relation-item">⭐ = 🌟 Inscrição <span class="pts">10</span></span>
+            <span class="gift-relation-item">🌹 = 🥫 Petisco <span class="pts">1</span></span>
+            <span class="gift-relation-item">🍩 = 🥣 Ração <span class="pts">5</span></span>
+            <span class="gift-relation-item">🍭 = 🥛 Leite <span class="pts">10</span></span>
+            <span class="gift-relation-item">🍦 = 🐟 Peixe <span class="pts">10</span></span>
+            <span class="gift-relation-item">🖐️ = 🖐️ Carinho <span class="pts">15</span></span>
+            <span class="gift-relation-item">🦫 = 🥩 Picanha <span class="pts">30</span></span>
+            <span class="gift-relation-item">❤️ = 🖐️ 500 TAP taps <span class="pts">2</span></span>
+            <span class="gift-relation-item">🔄 = 🖐️ Share <span class="pts">2</span></span>
+
+            <span class="gift-relation-item">⭐ = 🌟 Inscrição <span class="pts">10</span></span>
+            <span class="gift-relation-item">🌹 = 🥫 Petisco <span class="pts">1</span></span>
+            <span class="gift-relation-item">🍩 = 🥣 Ração <span class="pts">5</span></span>
+            <span class="gift-relation-item">🍭 = 🥛 Leite <span class="pts">10</span></span>
+            <span class="gift-relation-item">🍦 = 🐟 Peixe <span class="pts">10</span></span>
+            <span class="gift-relation-item">🖐️ = 🖐️ Carinho <span class="pts">15</span></span>
+            <span class="gift-relation-item">🦫 = 🥩 Picanha <span class="pts">30</span></span>
+            <span class="gift-relation-item">❤️ = 🖐️ 500 TAP taps <span class="pts">2</span></span>
+            <span class="gift-relation-item">🔄 = 🖐️ Share <span class="pts">2</span></span>
+        </div>
+    </div>
+
+    <!-- ÁREA DE ANIMAÇÃO DOS GATINHOS -->
+    <div id="cat-stage-below-scroll"></div>
+
+    <div id="winner-modal">
+        <h1 id="winner-title" style="color: #f8a5c2;">🎉 GATINHO ADOTADO!</h1>
+        <div id="winner-cat" style="font-size: 90px;">🐱</div>
+        <h2 id="winner-name" style="color: #00fff5;">Usuário</h2>
+        <p id="winner-desc" style="color: #ccc;">Maior cuidador da rodada!</p>
+    </div>
+
+    <script>
+        function abrirModalConfig() {
+            document.getElementById('modal-config-app').style.display = 'flex';
+        }
+
+        function fecharModalConfig() {
+            document.getElementById('modal-config-app').style.display = 'none';
+        }
+
+        // LÓGICA DE SAÍDA EXPANDIDA PARA NAVEGADORES/WEBVIEWS
+        function sairDoAplicativo() {
+            if (window.Android && typeof window.Android.closeApp === 'function') {
+                window.Android.closeApp();
+            } else if (navigator.app && typeof navigator.app.exitApp === 'function') {
+                navigator.app.exitApp();
+            } else if (navigator.device && typeof navigator.device.exitApp === 'function') {
+                navigator.device.exitApp();
+            } else {
+                window.close();
+                setTimeout(function() {
+                    window.location.href = "about:blank";
+                }, 300);
+            }
+        }
+
+        var CATS = [
+            { name: "Mingau", icon: "🐱", notes: [523.25, 659.25, 783.99, 1046.50, 783.99, 659.25, 587.33, 523.25], tempo: 160 },
+            { name: "Fumaça", icon: "😸", notes: [440.00, 554.37, 659.25, 880.00, 659.25, 554.37, 493.88, 440.00], tempo: 140 },
+            { name: "Soneca", icon: "😺", notes: [329.63, 392.00, 493.88, 659.25, 493.88, 392.00, 349.23, 329.63], tempo: 220 },
+            { name: "Bichano", icon: "😻", notes: [587.33, 739.99, 880.00, 1174.66, 880.00, 739.99, 659.25, 587.33], tempo: 130 },
+            { name: "Tom", icon: "😽", notes: [392.00, 493.88, 587.33, 783.99, 587.33, 493.88, 440.00, 392.00], tempo: 170 },
+            { name: "Sissi", icon: "🐈", notes: [659.25, 783.99, 987.77, 1318.51, 987.77, 783.99, 698.46, 659.25], tempo: 150 },
+            { name: "Félix", icon: "🐈‍⬛", notes: [349.23, 440.00, 523.25, 698.46, 523.25, 440.00, 392.00, 349.23], tempo: 180 },
+            { name: "Pipoca", icon: "😹", notes: [698.46, 880.00, 1046.50, 1396.91, 1046.50, 880.00, 783.99, 698.46], tempo: 120 },
+            { name: "Floquinho", icon: "😾", notes: [293.66, 349.23, 440.00, 587.33, 440.00, 349.23, 329.63, 293.66], tempo: 190 },
+            { name: "Pantera", icon: "🐆", notes: [220.00, 277.18, 329.63, 440.00, 329.63, 277.18, 246.94, 220.00], tempo: 200 },
+            { name: "Chico", icon: "🙀", notes: [493.88, 622.25, 739.99, 987.77, 739.99, 622.25, 554.37, 493.88], tempo: 135 },
+            { name: "Nala", icon: "🐈", notes: [523.25, 622.25, 783.99, 1046.50, 783.99, 622.25, 587.33, 523.25], tempo: 165 },
+            { name: "Apollo", icon: "🐱", notes: [587.33, 698.46, 880.00, 1174.66, 880.00, 698.46, 659.25, 587.33], tempo: 145 },
+            { name: "Luna", icon: "😸", notes: [659.25, 830.61, 987.77, 1318.51, 987.77, 830.61, 783.99, 659.25], tempo: 155 },
+            { name: "Bibelô", icon: "😺", notes: [440.00, 523.25, 659.25, 880.00, 659.25, 523.25, 493.88, 440.00], tempo: 175 },
+            { name: "Amora", icon: "😻", notes: [523.25, 659.25, 880.00, 1046.50, 880.00, 659.25, 587.33, 523.25], tempo: 150 },
+            { name: "Mimi", icon: "😽", notes: [587.33, 698.46, 830.61, 1174.66, 830.61, 698.46, 659.25, 587.33], tempo: 160 }
+        ];
+
+        var GIFTS_MAP = {
+            'rosa':      { actionName: 'deu petisco',      points: 1,  tiktokEmoji: '🌹', rainEmoji: '🥫' },
+            'petisco':   { actionName: 'deu petisco',      points: 1,  tiktokEmoji: '🌹', rainEmoji: '🥫' },
+            'rosquinha': { actionName: 'deu ração',        points: 5,  tiktokEmoji: '🍩', rainEmoji: '🥣' },
+            'pirulito':  { actionName: 'deu leite',        points: 10, tiktokEmoji: '🍭', rainEmoji: '🥛' },
+            'leite':     { actionName: 'deu leite',        points: 10, tiktokEmoji: '🍭', rainEmoji: '🥛' },
+            'sorvete':   { actionName: 'deu peixe',        points: 10, tiktokEmoji: '🍦', rainEmoji: '🐟' },
+            'peixe':     { actionName: 'deu peixe',        points: 10, tiktokEmoji: '🍦', rainEmoji: '🐟' },
+            'carinho':   { actionName: 'deu carinho',      points: 15, tiktokEmoji: '🖐️', rainEmoji: '🖐️' },
+            'picanha':   { actionName: 'deu picanha',      points: 30, tiktokEmoji: '🦫', rainEmoji: '🥩' },
+            'capivara':  { actionName: 'deu picanha',      points: 30, tiktokEmoji: '🦫', rainEmoji: '🥩' }
+        };
+
+        var currentCat = CATS[0];
+        var usersData = {};
+        var timeLeft = 300;
+        var audioCtx = null;
+        var bgmInterval = null;
+        var speechTimeout = null;
+
+        var stage = document.getElementById('stage');
+        var catWrapper = document.getElementById('cat-wrapper');
+        var catAvatar = document.getElementById('cat-avatar');
+        var speechBubble = document.getElementById('speech-bubble');
+        var interactionBanner = document.getElementById('interaction-banner');
+        var timerEl = document.getElementById('timer');
+        var ranksEl = document.getElementById('ranks');
+        var winnerModal = document.getElementById('winner-modal');
+
+        function unlockAudio() {
+            initAudio();
+            document.removeEventListener('click', unlockAudio);
+            document.removeEventListener('touchstart', unlockAudio);
+        }
+        document.addEventListener('click', unlockAudio);
+        document.addEventListener('touchstart', unlockAudio);
+
+        window.addEventListener('DOMContentLoaded', function() {
+            initAudio();
+            startTimer();
+            triggerFloatingCats();
+            setInterval(triggerFloatingCats, 15000);
+        });
+
+        function startTimer() {
+            setInterval(function() {
+                timeLeft--;
+                var mins = Math.floor(timeLeft / 60);
+                var secs = timeLeft % 60;
+                timerEl.innerText = (mins < 10 ? '0' + mins : mins) + ':' + (secs < 10 ? '0' + secs : secs);
+                if (timeLeft <= 0) endRound();
+            }, 1000);
+        }
+
+        function getRandomInt(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+
+        function triggerFloatingCats() {
+            var container = document.getElementById('cat-stage-below-scroll');
+            if (!container) return;
+            container.innerHTML = '';
+
+            var shuffled = CATS.slice().sort(function() { return 0.5 - Math.random(); });
+            var selected = shuffled.slice(0, 3);
+
+            selected.forEach(function(cat, index) {
+                setTimeout(function() {
+                    var el = document.createElement('div');
+                    el.className = 'floating-cat-item';
+                    el.innerText = cat.icon;
+
+                    var startX = container.clientWidth - 10; 
+                    var startY = getRandomInt(0, 15);
+                    var midX = getRandomInt(container.clientWidth * 0.4, container.clientWidth * 0.7);
+                    var midY = getRandomInt(20, container.clientHeight - 40);
+                    var endX = -50;
+                    var endY = midY + getRandomInt(5, 20);
+
+                    el.style.setProperty('--start-x', startX + 'px');
+                    el.style.setProperty('--start-y', startY + 'px');
+                    el.style.setProperty('--mid-x', midX + 'px');
+                    el.style.setProperty('--mid-y', midY + 'px');
+                    el.style.setProperty('--end-x', endX + 'px');
+                    el.style.setProperty('--end-y', endY + 'px');
+
+                    container.appendChild(el);
+
+                    if (window.requestAnimationFrame) {
+                        window.requestAnimationFrame(function() { el.classList.add('active'); });
+                    } else {
+                        setTimeout(function() { el.classList.add('active'); }, 50);
+                    }
+                }, index * 800);
+            });
+        }
+
+        setInterval(function() {
+            if (!stage) return;
+            var star = document.createElement('div');
+            star.classList.add('star');
+            star.innerText = '✨';
+            star.style.left = Math.random() * (stage.clientWidth - 15) + 'px';
+            star.style.animationDuration = (Math.random() * 1.5 + 1.5) + 's';
+            stage.appendChild(star);
+            setTimeout(function() { star.remove(); }, 3000);
+        }, 350);
+
+        function spawnEmojiRain(emoji) {
+            for (var i = 0; i < 5; i++) {
+                (function(index) {
+                    setTimeout(function() {
+                        var item = document.createElement('div');
+                        item.classList.add('falling-emoji');
+                        item.innerText = emoji;
+                        item.style.left = Math.random() * (stage.clientWidth - 35) + 'px';
+                        item.style.animationDuration = (Math.random() * 0.8 + 1.2) + 's';
+                        stage.appendChild(item);
+                        setTimeout(function() { item.remove(); }, 2200);
+                    }, index * 120);
+                })(i);
+            }
+        }
+
+        function showSpeechBubble(text, duration) {
+            duration = duration || 3500;
+            speechBubble.innerText = text;
+            speechBubble.style.opacity = '1';
+            if (speechTimeout) clearTimeout(speechTimeout);
+            speechTimeout = setTimeout(function() { speechBubble.style.opacity = '0'; }, duration);
+        }
+
+        setInterval(function() {
+            var maxMove = stage.clientWidth / 2 - 40;
+            var randomX = (Math.random() * maxMove * 2) - maxMove;
+            catWrapper.style.transform = 'translateX(' + randomX + 'px)';
+
+            setTimeout(function() {
+                if (speechBubble.style.opacity === '0' || !speechBubble.style.opacity) {
+                    showSpeechBubble('Me adota!', 2000);
+                }
+            }, 800);
+        }, 4500);
+
+        function initAudio() {
+            if (!audioCtx) {
+                var AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                if (AudioContextClass) audioCtx = new AudioContextClass();
+            }
+            if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+            startCatBGM();
+        }
+
+        function playRandomMeow() {
+            initAudio();
+            if (!audioCtx) return;
+            var meowType = Math.floor(Math.random() * 5);
+            var now = audioCtx.currentTime;
+
+            try {
+                var osc = audioCtx.createOscillator();
+                var gain = audioCtx.createGain();
+                osc.type = 'sine';
+
+                if (meowType === 0) {
+                    osc.frequency.setValueAtTime(550, now);
+                    osc.frequency.exponentialRampToValueAtTime(980, now + 0.12);
+                    osc.frequency.exponentialRampToValueAtTime(400, now + 0.4);
+                    gain.gain.setValueAtTime(0.01, now);
+                    gain.gain.linearRampToValueAtTime(0.8, now + 0.05);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+                    osc.connect(gain); gain.connect(audioCtx.destination);
+                    osc.start(now); osc.stop(now + 0.4);
+                } else if (meowType === 1) {
+                    osc.frequency.setValueAtTime(800, now);
+                    osc.frequency.exponentialRampToValueAtTime(1400, now + 0.08);
+                    osc.frequency.exponentialRampToValueAtTime(650, now + 0.25);
+                    gain.gain.setValueAtTime(0.01, now);
+                    gain.gain.linearRampToValueAtTime(0.7, now + 0.03);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+                    osc.connect(gain); gain.connect(audioCtx.destination);
+                    osc.start(now); osc.stop(now + 0.25);
+                } else if (meowType === 2) {
+                    osc.frequency.setValueAtTime(380, now);
+                    osc.frequency.exponentialRampToValueAtTime(650, now + 0.15);
+                    osc.frequency.exponentialRampToValueAtTime(280, now + 0.5);
+                    gain.gain.setValueAtTime(0.01, now);
+                    gain.gain.linearRampToValueAtTime(0.9, now + 0.06);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+                    osc.connect(gain); gain.connect(audioCtx.destination);
+                    osc.start(now); osc.stop(now + 0.5);
+                } else if (meowType === 3) {
+                    osc.frequency.setValueAtTime(600, now);
+                    osc.frequency.exponentialRampToValueAtTime(1100, now + 0.05);
+                    osc.frequency.exponentialRampToValueAtTime(500, now + 0.15);
+                    gain.gain.setValueAtTime(0.01, now);
+                    gain.gain.linearRampToValueAtTime(0.8, now + 0.02);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+                    osc.connect(gain); gain.connect(audioCtx.destination);
+                    osc.start(now); osc.stop(now + 0.15);
+                } else if (meowType === 4) {
+                    osc.frequency.setValueAtTime(500, now);
+                    osc.frequency.exponentialRampToValueAtTime(850, now + 0.1);
+                    osc.frequency.exponentialRampToValueAtTime(600, now + 0.2);
+                    osc.frequency.exponentialRampToValueAtTime(950, now + 0.35);
+                    osc.frequency.exponentialRampToValueAtTime(350, now + 0.55);
+                    gain.gain.setValueAtTime(0.01, now);
+                    gain.gain.linearRampToValueAtTime(0.8, now + 0.05);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
+                    osc.connect(gain); gain.connect(audioCtx.destination);
+                    osc.start(now); osc.stop(now + 0.55);
+                }
+            } catch(e) {}
+        }
+
+        function playSadMeow() {
+            initAudio();
+            if (!audioCtx) return;
+            try {
+                var now = audioCtx.currentTime;
+                var osc = audioCtx.createOscillator();
+                var gain = audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(450, now);
+                osc.frequency.exponentialRampToValueAtTime(750, now + 0.4);
+                osc.frequency.exponentialRampToValueAtTime(200, now + 1.8);
+                gain.gain.setValueAtTime(0.01, now);
+                gain.gain.linearRampToValueAtTime(0.9, now + 0.2);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 1.8);
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                osc.start(now); osc.stop(now + 1.8);
+            } catch(e) {}
+        }
+
+        function startCatBGM() {
+            if (!audioCtx) return;
+            if (bgmInterval) clearInterval(bgmInterval);
+
+            var noteIdx = 0;
+            bgmInterval = setInterval(function() {
+                if (!audioCtx || audioCtx.state !== 'running') return;
+                try {
+                    var notes = currentCat.notes;
+                    var osc = audioCtx.createOscillator();
+                    var gain = audioCtx.createGain();
+                    osc.type = 'square';
+                    osc.frequency.setValueAtTime(notes[noteIdx], audioCtx.currentTime);
+                    gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.14);
+                    osc.connect(gain); gain.connect(audioCtx.destination);
+                    osc.start(); osc.stop(audioCtx.currentTime + 0.14);
+                    noteIdx = (noteIdx + 1) % notes.length;
+                } catch(e) {}
+            }, currentCat.tempo);
+        }
+
+        function processInteraction(user, type, value) {
+            initAudio();
+            var now = Date.now();
+            if (!usersData[user]) usersData[user] = { points: 0, likesAccumulated: 0, firstTime: now };
+            var gainedPoints = 0;
+            var actionText = '';
+            var eventIcon = '❤️';
+            var rainEmoji = '❤️';
+            var thanksMsg = '';
+
+            if (type === 'SUBSCRIBE' || type === 'SUB') {
+                gainedPoints = 10;
+                actionText = 'se inscreveu';
+                eventIcon = '⭐';
+                rainEmoji = '⭐';
+                thanksMsg = 'Obrigado ' + user + ' pela ⭐!';
+                triggerCatAnimation('carinho');
+            } else if (type === 'GIFT') {
+                var giftKey = String(value).toLowerCase();
+                var giftData = GIFTS_MAP[giftKey] || { actionName: 'deu ' + giftKey, points: 1, tiktokEmoji: '🎁', rainEmoji: '🎁' };
+                gainedPoints = giftData.points;
+                actionText = giftData.actionName;
+                eventIcon = giftData.tiktokEmoji;
+                rainEmoji = giftData.rainEmoji;
+                thanksMsg = 'Obrigado ' + user + ' pelo ' + giftData.tiktokEmoji + '!';
+                triggerCatAnimation(giftKey);
+            } else if (type === 'LIKE') {
+                usersData[user].likesAccumulated += Number(value) || 0;
+                if (usersData[user].likesAccumulated >= 500) {
+                    var pts = Math.floor(usersData[user].likesAccumulated / 500) * 2;
+                    usersData[user].likesAccumulated %= 500;
+                    gainedPoints = pts;
+                    actionText = 'deu TAPs';
+                    eventIcon = '❤️';
+                    rainEmoji = '❤️';
+                    thanksMsg = 'Obrigado ' + user + ' pelos ❤️!';
+                    triggerCatAnimation('carinho');
+                } else {
+                    return;
+                }
+            } else if (type === 'SHARE') {
+                gainedPoints = 2;
+                actionText = 'compartilhou';
+                eventIcon = '🔄';
+                rainEmoji = '🔄';
+                thanksMsg = 'Obrigado ' + user + ' pelo 🔄!';
+                triggerCatAnimation('carinho');
+            }
+
+            if (gainedPoints > 0) {
+                usersData[user].points += gainedPoints;
+                showTopNotification(eventIcon + ' ' + user + ' ' + actionText);
+                showSpeechBubble(thanksMsg, 4000);
+                spawnEmojiRain(rainEmoji);
+                playRandomMeow();
+                updateLeaderboard();
+            }
+        }
+
+        function showTopNotification(text) {
+            interactionBanner.innerHTML = '<div class="interaction-pop">' + text + '</div>';
+        }
+
+        function triggerCatAnimation(action) {
+            if (action.indexOf('carinho') !== -1) catAvatar.classList.add('purring');
+            else catAvatar.classList.add('eating');
+
+            setTimeout(function() { 
+                catAvatar.classList.remove('purring', 'eating'); 
+            }, 2000);
+        }
+
+        function updateLeaderboard() {
+            var sorted = Object.keys(usersData).map(function(k) {
+                return { name: k, points: usersData[k].points, firstTime: usersData[k].firstTime };
+            }).sort(function(a, b) {
+                return b.points === a.points ? a.firstTime - b.firstTime : b.points - a.points;
+            });
+
+            ranksEl.innerHTML = '';
+            for (var i = 0; i < 3; i++) {
+                var u = sorted[i];
+                if (u && u.points > 0) {
+                    ranksEl.innerHTML += 
+                        '<div class="rank-item rank-' + (i + 1) + '">' +
+                            '<span class="user-name">' + (i + 1) + '.' + u.name + '</span>' +
+                            '<span>' + u.points + 'p</span>' +
+                        '</div>';
+                } else {
+                    ranksEl.innerHTML += 
+                        '<div class="rank-item rank-' + (i + 1) + '">' +
+                            '<span class="user-name">' + (i + 1) + '. ---</span>' +
+                            '<span>0p</span>' +
+                        '</div>';
+                }
+            }
+        }
+
+        function endRound() {
+            var sorted = Object.keys(usersData).map(function(k) {
+                return { name: k, points: usersData[k].points, firstTime: usersData[k].firstTime };
+            }).filter(function(u) { return u.points > 0; })
+            .sort(function(a, b) {
+                return b.points === a.points ? a.firstTime - b.firstTime : b.points - a.points;
+            });
+
+            var titleEl = document.getElementById('winner-title');
+            var catEl = document.getElementById('winner-cat');
+            var nameEl = document.getElementById('winner-name');
+            var descEl = document.getElementById('winner-desc');
+
+            if (sorted.length > 0) {
+                titleEl.innerText = "🎉 GATINHO ADOTADO!";
+                catEl.innerText = currentCat.icon;
+                nameEl.innerText = sorted[0].name;
+                descEl.innerText = "Maior cuidador da rodada!";
+                playRandomMeow();
+            } else {
+                titleEl.innerText = "😭 Ninguém adotou o gatinho!";
+                catEl.innerText = "😿";
+                nameEl.innerText = "";
+                descEl.innerText = "Ajude o próximo gatinho enviando presentes!";
+                playSadMeow();
+            }
+
+            winnerModal.style.display = 'flex';
+
+            setTimeout(function() {
+                winnerModal.style.display = 'none';
+                usersData = {};
+                timeLeft = 300;
+                
+                var randomIndex = Math.floor(Math.random() * CATS.length);
+                currentCat = CATS[randomIndex];
+
+                document.getElementById('cat-name').innerText = "🐱 Gatinho: " + currentCat.name;
+                catAvatar.innerText = currentCat.icon;
+                
+                startCatBGM();
+                updateLeaderboard();
+                triggerFloatingCats();
+            }, 6000);
+        }
+
+        // Conexão via WebSocket (Servidor de ponte)
+        if (window.location.protocol === 'http:' || window.location.protocol === 'https:') {
+            try {
+                var wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                var wsHost = window.location.host;
+                var ws = new WebSocket(wsProtocol + '//' + wsHost);
+                ws.onmessage = function(e) {
+                    try {
+                        var data = JSON.parse(e.data);
+                        processInteraction(data.user, data.type, data.value);
+                    } catch(err) {}
+                };
+            } catch(err) {}
+        }
+    </script>
+</body>
+</html>
